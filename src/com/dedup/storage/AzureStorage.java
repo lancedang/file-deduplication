@@ -10,6 +10,7 @@ import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 
 import com.dedup.Chunk;
+import com.dedup.storage.StorageFactory.StorageType;
 import com.microsoft.windowsazure.services.core.storage.*;
 import com.microsoft.windowsazure.services.blob.client.*;
 
@@ -32,7 +33,7 @@ public class AzureStorage implements IStorage {
 	 */
 	public AzureStorage(String connectionString) throws InvalidKeyException,
 			URISyntaxException, StorageException {
-		System.out.println(connectionString);
+	//	System.out.println(connectionString);
 		storageAccount = CloudStorageAccount.parse(connectionString);
 		client = this.storageAccount.createCloudBlobClient();
 		container = this.client.getContainerReference("csci4180deduplication");
@@ -95,6 +96,11 @@ public class AzureStorage implements IStorage {
 		CloudBlockBlob blob = container.getBlockBlobReference("blocks/"
 				+ fingerprint);
 		return blob.deleteIfExists();
+	}
+
+	@Override
+	public StorageType getType() {
+		return StorageFactory.StorageType.AZURE;
 	}
 
 }

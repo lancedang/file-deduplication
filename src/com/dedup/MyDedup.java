@@ -11,16 +11,19 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import java.io.PrintStream;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.dedup.storage.IStorage;
 import com.dedup.storage.StorageFactory;
+import com.dedup.storage.StorageFactory.StorageType;
 import com.microsoft.windowsazure.services.core.storage.StorageException;
 
 /**
@@ -63,12 +66,12 @@ public class MyDedup {
 		 */
 		public int v;
 
-		public String storage;
+		public StorageType storage;
 
 		public String pathName;
 
 		public RequestParameters(RequestAction action, int m, int q, int x,
-				int d, int v, String pathName, String storage) {
+				int d, int v, String pathName, StorageType type) {
 			this.action = action;
 			this.m = m;
 			this.q = q;
@@ -76,7 +79,7 @@ public class MyDedup {
 			this.d = d;
 			this.v = v;
 			this.pathName = pathName;
-			this.storage = storage.equals("local") ? "local" : "remote";
+			this.storage = type;
 		}
 
 		public RequestParameters(RequestAction action, String pathName) {
@@ -120,34 +123,33 @@ public class MyDedup {
 
 		try {
 
-			StorageFactory.StorageType type = request.storage.equals("local") ? StorageFactory.StorageType.LOCAL
-					: StorageFactory.StorageType.AZURE;
-			IStorage storage = type == StorageFactory.StorageType.LOCAL ? StorageFactory
-					.GetStorage(StorageFactory.StorageType.LOCAL, "data/")
-					: StorageFactory.GetStorage(
-							StorageFactory.StorageType.AZURE,
-							storageConnectionString);
+			StorageFactory.createStorage(StorageFactory.StorageType.LOCAL,
+					"data/");
+			StorageFactory.createStorage(StorageFactory.StorageType.AZURE,
+					storageConnectionString);
+			IStorage storage = StorageFactory.getStorage(request.storage);
+
+			// open or create index
 			Index index = MyDedup.indexExists() ? MyDedup.open() : new Index();
-			System.out
-					.println("MyDedup - by @ntf, @longyakmok , @kousin197804");
 
 			switch (request.action) {
 			case DELETE:
-				deleteAction(request, System.out, index, storage);
+				deleteAction(request, System.out, index);
 				break;
 			case DOWNLOAD:
-				downloadAction(request, System.out, index, storage);
+				downloadAction(request, System.out, index);
 				break;
 			case UPLOAD:
 				uploadAction(request, System.out, index, storage);
 				break;
 			default:
 				break;
-
 			}
+
+			// save index
 			MyDedup.save(index);
 
-			System.out.println("=========end=========");
+			System.out.println("[DEBUG] =========end=========");
 
 		} catch (InvalidKeyException | URISyntaxException | StorageException
 				| IOException | ClassNotFoundException e) {
@@ -156,8 +158,8 @@ public class MyDedup {
 		}
 	}
 
-	public static void uploadAction(RequestParameters request,
-			OutputStream out, Index index, IStorage storage) throws IOException {
+	public static void uploadAction(RequestParameters request, PrintStream out,
+			Index index, IStorage storage) throws IOException {
 		File file = new File(request.pathName);
 		if (!file.exists()) {
 			throw new FileNotFoundException("input file not found.");
@@ -196,13 +198,51 @@ public class MyDedup {
 	}
 
 	public static void downloadAction(RequestParameters request,
-			OutputStream out, Index index, IStorage storage) throws IOException {
+			PrintStream out, Index index) throws InvalidKeyException,
+			URISyntaxException, StorageException, IOException {
 
+		if (!index.hasFile(request.pathName)) {
+			throw new FileNotFoundException("File not found");
+		}
+		FileOutputStream output = new FileOutputStream(new File(
+				request.pathName));
+
+		// SHA-1 String , Chunk pair
+		for (Entry<String, Chunk> pair : index.getChunks(request.pathName)) {
+			IStorage storage = StorageFactory.getStorage(pair.getValue().type);
+			Chunk chunkData = storage.get(pair.getKey());
+			output.write(chunkData.data);
+		}
+		output.close();
 	}
 
-	public static void deleteAction(RequestParameters request,
-			OutputStream out, Index index, IStorage storage) throws IOException {
+	public static void deleteAction(RequestParameters request, PrintStream out,
+			Index index) throws FileNotFoundException, InvalidKeyException,
+			URISyntaxException, StorageException {
+		ArrayList<Map.Entry<String, Chunk>> deleteList = new ArrayList<Map.Entry<String, Chunk>>();
+		if (!index.hasFile(request.pathName)) {
+			throw new FileNotFoundException("File not found");
+		}
 
+		for (Entry<String, Chunk> pair : index.getChunks(request.pathName)) {
+			pair.getValue().decrement();
+			if (pair.getValue().shouldDelete()) {
+				deleteList.add(pair);
+			} else {
+				index.chunks.put(pair.getKey(), pair.getValue());
+			}
+		}
+
+		for (Entry<String, Chunk> pair : deleteList) {
+			out.println("[DEBUG] " + pair.getKey() + " removed from "
+					+ pair.getValue().type.toString());
+			IStorage storage = StorageFactory.getStorage(pair.getValue().type);
+			storage.remove(pair.getKey());
+			index.chunks.remove(pair.getKey());
+		}
+		index.files.remove(request.pathName);
+		out.println("Delete done and " + deleteList.size()
+				+ " chucks are removed");
 	}
 
 	public static String calculateFingerprint(byte[] data) {
@@ -230,11 +270,13 @@ public class MyDedup {
 			if (args.length != 8) {
 				return null;
 			}
+			StorageFactory.StorageType type = args[7].equals("local") ? StorageFactory.StorageType.LOCAL
+					: StorageFactory.StorageType.AZURE;
 			return new MyDedup.RequestParameters(
 					MyDedup.RequestParameters.RequestAction.UPLOAD,
 					Integer.parseInt(args[1]), Integer.parseInt(args[2]),
 					Integer.parseInt(args[3]), Integer.parseInt(args[4]),
-					Integer.parseInt(args[5]), args[6], args[7]);
+					Integer.parseInt(args[5]), args[6], type);
 		case "download":
 			if (args.length != 2) {
 				return null;

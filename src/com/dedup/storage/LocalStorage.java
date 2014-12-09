@@ -4,6 +4,7 @@
 package com.dedup.storage;
 
 import com.dedup.Chunk;
+import com.dedup.storage.StorageFactory.StorageType;
 
 /**
  * @author NTF
@@ -18,7 +19,9 @@ public class LocalStorage implements IStorage {
 		// TODO Auto-generated constructor stub
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.dedup.storage.IStorage#get(java.lang.String)
 	 */
 	@Override
@@ -27,7 +30,9 @@ public class LocalStorage implements IStorage {
 		return null;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.dedup.storage.IStorage#put(java.lang.String, com.dedup.Chunk)
 	 */
 	@Override
@@ -36,7 +41,9 @@ public class LocalStorage implements IStorage {
 
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.dedup.storage.IStorage#exists(java.lang.String)
 	 */
 	@Override
@@ -45,13 +52,20 @@ public class LocalStorage implements IStorage {
 		return false;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.dedup.storage.IStorage#remove(java.lang.String)
 	 */
 	@Override
 	public boolean remove(String fingerprint) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public StorageType getType() {
+		return StorageFactory.StorageType.LOCAL;
 	}
 
 }

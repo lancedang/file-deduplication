@@ -15,6 +15,7 @@ import com.microsoft.windowsazure.services.core.storage.StorageException;
  */
 public interface IStorage {
 
+	StorageFactory.StorageType getType();
 	/**
 	 * get a Chunk from storage
 	 * 
