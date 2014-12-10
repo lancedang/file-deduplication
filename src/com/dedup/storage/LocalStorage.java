@@ -3,6 +3,13 @@
  */
 package com.dedup.storage;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import com.dedup.Chunk;
 import com.dedup.storage.StorageFactory.StorageType;
 
@@ -11,7 +18,7 @@ import com.dedup.storage.StorageFactory.StorageType;
  *
  */
 public class LocalStorage implements IStorage {
-
+	private static final String folder = "data/";
 	/**
 	 * 
 	 */
@@ -26,7 +33,28 @@ public class LocalStorage implements IStorage {
 	 */
 	@Override
 	public Chunk get(String fingerprint) {
-		// TODO Auto-generated method stub
+		
+		if (this.exists(fingerprint)){
+			try {
+				//read object from data/
+				FileInputStream fIn = new FileInputStream(folder + fingerprint);
+				ObjectInputStream ois = new ObjectInputStream(fIn);
+				
+				//read the object and cast it to chunk
+				Chunk niceChunk = (Chunk)ois.readObject();
+				
+				//close streams
+				ois.close();
+				fIn.close();
+				
+				//return the object
+				return niceChunk;
+				
+			} catch (Exception e) {//this never throw
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		return null;
 	}
 
@@ -37,8 +65,24 @@ public class LocalStorage implements IStorage {
 	 */
 	@Override
 	public void put(String fingerprint, Chunk chunk) {
-		// TODO Auto-generated method stub
-
+		
+		try {
+			//create streams
+			FileOutputStream fOut = new FileOutputStream(folder + fingerprint);
+			ObjectOutputStream oos = new ObjectOutputStream(fOut);
+			
+			//right the object to disk
+			oos.writeObject(chunk);
+			
+			//clean up
+			oos.close();
+			fOut.close();
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 
 	/*
@@ -48,8 +92,8 @@ public class LocalStorage implements IStorage {
 	 */
 	@Override
 	public boolean exists(String fingerprint) {
-		// TODO Auto-generated method stub
-		return false;
+
+		return new File(folder + fingerprint).exists();
 	}
 
 	/*
@@ -59,8 +103,10 @@ public class LocalStorage implements IStorage {
 	 */
 	@Override
 	public boolean remove(String fingerprint) {
-		// TODO Auto-generated method stub
-		return false;
+
+		File target = new File(folder + fingerprint);
+		return target.delete();
+
 	}
 
 	@Override

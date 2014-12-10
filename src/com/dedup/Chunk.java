@@ -3,13 +3,15 @@
  */
 package com.dedup;
 
+import java.io.Serializable;
+
 import com.dedup.storage.StorageFactory.StorageType;
 
 /**
  * @author NTF
  *
  */
-public class Chunk {
+public class Chunk implements Serializable{
 	public int refCount = 0;
 	public StorageType type;
 
