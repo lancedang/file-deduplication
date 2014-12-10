@@ -224,7 +224,7 @@ public class MyDedup {
 			throw new FileNotFoundException("File not found");
 		}
 
-		for (Entry<String, Chunk> pair : index.getChunks(request.pathName)) {
+		for (Entry<String, Chunk> pair : index.getUniqueChunks(request.pathName).entrySet()) {
 			pair.getValue().decrement();
 			if (pair.getValue().shouldDelete()) {
 				deleteList.add(pair);

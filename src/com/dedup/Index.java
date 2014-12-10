@@ -37,6 +37,14 @@ public class Index implements Serializable {
 		return chunks;
 	}
 
+	public HashMap<String, Chunk> getUniqueChunks(String pathName) {
+		HashMap<String, Chunk> chunks = new HashMap<String, Chunk>();
+		for (String hash : files.get(pathName)) {
+			chunks.put(hash, this.getChunk(hash));
+		}
+		return chunks;
+	}
+
 	public ArrayList<String> getChunkHashes(String pathName) {
 		ArrayList<Chunk> chunks = new ArrayList<Chunk>();
 		for (String fingerprint : files.get(pathName)) {
