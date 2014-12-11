@@ -173,8 +173,8 @@ public class MyDedup {
         int size = 0;
         int lastRfp = 0;
         int offset = 0;
-        boolean max = false;
-        int maxCounter = 0;
+        boolean chunkFound = false;
+        int currentChunkSize = 0;
         ArrayList<Integer> byteStore = new ArrayList<Integer>();
 
         // @see tut9_assg3-rfp.pdf p.31
@@ -190,10 +190,11 @@ public class MyDedup {
             if (size == request.x) {
                 offsets.add(offset);
                 size = 0;
-                maxCounter = request.m;
-                max = true;
+                currentChunkSize = request.m;
+                chunkFound = true;
             }
-            if (max == false) {
+            
+            if (chunkFound == false) {
                 // calculate RFP
                 if (byteStore.size() >= request.m) {
                     if (byteStore.size() == request.m) {
@@ -220,6 +221,7 @@ public class MyDedup {
                         //rfp = ((((request.d % request.q) * ((lastRfp % request.q) - (((mod % request.q) * (lastByte % request.q)) % request.q) % request.q)) % request.q) + (data % request.q)) % request.q;
                         //request.d * (lastRfp % request.q) - ((int) modExpOpt(request.d, request.m - 1, request.q) * (lastByte % request.q));
                         if (rfp < 0) {
+                            
                             rfp += request.q;
                         }
                     }
@@ -228,14 +230,18 @@ public class MyDedup {
 
                 if (rfp == request.v) {
                     offsets.add(offset);
+                    currentChunkSize = size;
+                    chunkFound = true;
                     size = 0;
                 }
+                
                 lastRfp = rfp;
+                
             } else {
                 byteStore.remove(0);
-                maxCounter --;
-                if(maxCounter == 0){
-                    max = false;
+                currentChunkSize --;
+                if(currentChunkSize == 0){
+                    chunkFound = false;
                 }
             }
         }
