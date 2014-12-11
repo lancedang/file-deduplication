@@ -173,6 +173,8 @@ public class MyDedup {
         int size = 0;
         int lastRfp = 0;
         int offset = 0;
+        boolean max = false;
+        int maxCounter = 0;
         ArrayList<Integer> byteStore = new ArrayList<Integer>();
 
         // @see tut9_assg3-rfp.pdf p.31
@@ -188,40 +190,48 @@ public class MyDedup {
             if (size == request.x) {
                 offsets.add(offset);
                 size = 0;
+                maxCounter = request.m;
+                max = true;
             }
-
-            // calculate RFP
-            if (byteStore.size() >= request.m) {
-                if (byteStore.size() == request.m) {
-                    for (int i = 1; i <= request.m; i++) {
-                        int t = byteStore.get(i-1);
-                        int e = request.m - i;
-                        int mod = (int) modExpOpt(request.d, e, request.q);
-                        rfp += (t * mod) % request.q;
+            if (max == false) {
+                // calculate RFP
+                if (byteStore.size() >= request.m) {
+                    if (byteStore.size() == request.m) {
+                        for (int i = 1; i <= request.m; i++) {
+                            int t = byteStore.get(i - 1);
+                            int e = request.m - i;
+                            int mod = (int) modExpOpt(request.d, e, request.q);
+                            rfp += (t * mod) % request.q;
+                        }
+                        rfp = rfp % request.q;
+                    } else if (byteStore.size() == request.m + 1) {
+                        int lastByte = byteStore.remove(0);
+                        int mod = (int) modExpOpt(request.d, request.m - 1, request.q);
+                        rfp = ((((request.d % request.q) * ((lastRfp % request.q) - (((mod % request.q) * (lastByte % request.q)) % request.q) % request.q)) % request.q) + (data % request.q)) % request.q;
+                        //request.d * (lastRfp % request.q) - ((int) modExpOpt(request.d, request.m - 1, request.q) * (lastByte % request.q));
+                        if (rfp < 0) {
+                            rfp += request.q;
+                        }
                     }
-                    rfp = rfp % request.q;
-                } else if (byteStore.size() == request.m + 1) {
-                    int lastByte = byteStore.remove(0);
-                    int mod = (int)modExpOpt(request.d, request.m-1, request.q);
-                    rfp = ((((request.d % request.q) * ((lastRfp % request.q) - (((mod % request.q) * (lastByte % request.q)) % request.q) % request.q)) % request.q) + (data % request.q)) % request.q;
-                            //request.d * (lastRfp % request.q) - ((int) modExpOpt(request.d, request.m - 1, request.q) * (lastByte % request.q));
-                    if(rfp < 0){
-                        rfp += request.q;
-                    }
+                    System.out.println("ps:" + rfp + "\toffset:" + offset + "\tsize:" + size + "\tlastRfp:" + lastRfp);
                 }
-                System.out.println("ps:"+ rfp +"\toffset:"+offset+"\tsize:"+size+"\tlastRfp:"+lastRfp);
-            }
 
-            if(rfp == request.v){
-                offsets.add(offset);
-                size = 0;
+                if (rfp == request.v) {
+                    offsets.add(offset);
+                    size = 0;
+                }
+                lastRfp = rfp;
+            } else {
+                byteStore.remove(0);
+                maxCounter --;
+                if(maxCounter == 0){
+                    max = false;
+                }
             }
-            
-            lastRfp = rfp;
         }
         // size = file size here
         // DEBUG
-        for(int i : offsets){
+        for (int i : offsets) {
             System.out.println(i);
         }
         in.close();
