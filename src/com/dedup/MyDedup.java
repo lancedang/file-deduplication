@@ -3,28 +3,31 @@
  */
 package com.dedup;
 
+import com.dedup.storage.IStorage;
+import com.dedup.storage.StorageFactory;
+import com.dedup.storage.StorageFactory.StorageType;
+import com.microsoft.windowsazure.services.core.storage.StorageException;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.math.BigInteger;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import com.dedup.storage.IStorage;
-import com.dedup.storage.StorageFactory;
-import com.dedup.storage.StorageFactory.StorageType;
-import com.microsoft.windowsazure.services.core.storage.StorageException;
 
 /**
  * @author NTF
@@ -98,7 +101,7 @@ public class MyDedup {
      *
      * @param args
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws NoSuchAlgorithmException {
 
         RequestParameters request = MyDedup.handleArgs(args);
 
@@ -160,7 +163,7 @@ public class MyDedup {
     }
 
     public static void uploadAction(RequestParameters request, PrintStream out,
-            Index index, IStorage storage) throws IOException {
+            Index index, IStorage storage) throws IOException, NoSuchAlgorithmException, StorageException, URISyntaxException {
         File file = new File(request.pathName);
         if (!file.exists()) {
             throw new FileNotFoundException("input file not found.");
@@ -175,14 +178,18 @@ public class MyDedup {
         int offset = 0;
         boolean chunkFound = false;
         int currentChunkSize = 0;
-        ArrayList<Integer> byteStore = new ArrayList<Integer>();
-
+        
+        ArrayList<Byte> byteStore = new ArrayList<Byte>();
+        System.out.println("size " + request.x);
+        ByteBuffer niceBuffer = ByteBuffer.allocate(request.x);
+        
+        
         // @see tut9_assg3-rfp.pdf p.31
         // Rabin Fingerprint here
         while ((b = in.read()) != -1) {
             int rfp = 0;
             int data = (int) (b & 0xFF);
-            byteStore.add(data);
+            byteStore.add((byte)data);
             offset++;
             size++;
 
@@ -225,7 +232,8 @@ public class MyDedup {
                             rfp += request.q;
                         }
                     }
-                    System.out.println("ps:" + rfp + "\toffset:" + offset + "\tsize:" + size + "\tlastRfp:" + lastRfp);
+                    // DEBUG
+                    //System.out.println("ps:" + rfp + "\toffset:" + offset + "\tsize:" + size + "\tlastRfp:" + lastRfp);
                 }
 
                 if (rfp == request.v) {
@@ -238,9 +246,24 @@ public class MyDedup {
                 lastRfp = rfp;
                 
             } else {
-                byteStore.remove(0);
+                niceBuffer.put(byteStore.remove(0));
                 currentChunkSize --;
                 if(currentChunkSize == 0){
+                    
+                    MessageDigest md = MessageDigest.getInstance("SHA-1");
+                    System.out.println("chunk size: " + niceBuffer.position());
+                    md.update(niceBuffer.array(), 0, niceBuffer.position() + 1);
+                    
+                    byte[] checksumInByte = md.digest();
+                    String checksum = new BigInteger( 1, checksumInByte ).toString( 16 );
+                    
+                    //the chunk is new! amazaing!!!
+                    if(index.chunks.get(checksum) == null){
+                        storage.put(checksum, new Chunk(niceBuffer.array()));
+                    }
+                    
+                    
+                    niceBuffer.clear();
                     chunkFound = false;
                 }
             }

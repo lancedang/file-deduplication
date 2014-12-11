@@ -67,6 +67,12 @@ public class LocalStorage implements IStorage {
 	public void put(String fingerprint, Chunk chunk) {
 		
 		try {
+                        //create new file
+                        File newFile = new File(folder + fingerprint);
+                        if(!newFile.exists()){
+                            newFile.createNewFile();
+                        }
+                        
 			//create streams
 			FileOutputStream fOut = new FileOutputStream(folder + fingerprint);
 			ObjectOutputStream oos = new ObjectOutputStream(fOut);
