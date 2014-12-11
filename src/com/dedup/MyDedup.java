@@ -216,7 +216,7 @@ public class MyDedup {
                         
                         int tempPart1 = ((d_mMinus1 % q) * (ts %q)) % q;
                         int tempPart2 = ((psMinus1 % q) - tempPart1) % q;
-                        rfp = ((((d % q) * (tempPart2 % q)) % q) + (tsPlusM % q)) % q;
+                        rfp = ((((d % q) * (tempPart2)) % q) + (tsPlusM % q)) % q;
                         //rfp = ((((request.d % request.q) * ((lastRfp % request.q) - (((mod % request.q) * (lastByte % request.q)) % request.q) % request.q)) % request.q) + (data % request.q)) % request.q;
                         //request.d * (lastRfp % request.q) - ((int) modExpOpt(request.d, request.m - 1, request.q) * (lastByte % request.q));
                         if (rfp < 0) {
