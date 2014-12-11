@@ -207,7 +207,17 @@ public class MyDedup {
                     } else if (byteStore.size() == request.m + 1) {
                         int lastByte = byteStore.remove(0);
                         int mod = (int) modExpOpt(request.d, request.m - 1, request.q);
-                        rfp = ((((request.d % request.q) * ((lastRfp % request.q) - (((mod % request.q) * (lastByte % request.q)) % request.q) % request.q)) % request.q) + (data % request.q)) % request.q;
+                        int q = request.q;
+                        int d = (request.d % request.q);
+                        int psMinus1 = (lastRfp % request.q);
+                        int d_mMinus1 = (mod % request.q);
+                        int ts = (lastByte % request.q);
+                        int tsPlusM = (data % request.q);
+                        
+                        int tempPart1 = ((d_mMinus1 % q) * (ts %q)) % q;
+                        int tempPart2 = ((psMinus1 % q) - tempPart1) % q;
+                        rfp = ((((d % q) * (tempPart2 % q)) % q) + (tsPlusM % q)) % q;
+                        //rfp = ((((request.d % request.q) * ((lastRfp % request.q) - (((mod % request.q) * (lastByte % request.q)) % request.q) % request.q)) % request.q) + (data % request.q)) % request.q;
                         //request.d * (lastRfp % request.q) - ((int) modExpOpt(request.d, request.m - 1, request.q) * (lastByte % request.q));
                         if (rfp < 0) {
                             rfp += request.q;
