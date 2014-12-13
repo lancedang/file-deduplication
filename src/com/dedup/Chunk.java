@@ -12,13 +12,14 @@ import com.dedup.storage.StorageFactory.StorageType;
  *
  */
 public class Chunk implements Serializable{
-	public int refCount = 0;
+	public int refCount;
 	public StorageType type;
 
 	public byte[] data;
 
 	public Chunk(byte[] data) {
 		this.data = data;
+		this.refCount = 1;
 	}
 
 	public Chunk(StorageType type, int c) {

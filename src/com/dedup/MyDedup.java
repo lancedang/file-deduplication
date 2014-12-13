@@ -281,8 +281,7 @@ public class MyDedup {
 					storage.put(checksum, newChunk);
 				}
 				else{//if the chunk is indexed
-					//add ref count to the chunk
-					indexedChunk.refCount++;
+					indexedChunk.increment();//increase the ref count
 				}
 
 				//add the checksum to the list
