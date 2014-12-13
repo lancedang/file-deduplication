@@ -20,7 +20,6 @@ public class Chunk implements Serializable{
 	public Chunk(byte[] data) {
 		this.data = data;
 	}
-
 	public Chunk(StorageType type, int c) {
 		this.type = type;
 		this.refCount = c;
