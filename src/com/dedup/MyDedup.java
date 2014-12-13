@@ -197,7 +197,7 @@ public class MyDedup {
 				byteStore.put((byte) data);
 				offset++;
 				size++;
-			} else {
+			} else {//if EOF
 				offsets.add(offset);
 				chunkFound = true;
 			}
@@ -249,9 +249,9 @@ public class MyDedup {
 					// "\tsize:" + size + "\tlastRfp:" + lastRfp);
 				}
 
-				if (rfp == request.v) {
+				if (rfp == request.v) {//if this is the interested value
 					offsets.add(offset);
-					chunkFound = true;
+					chunkFound = true;//we found the chunk
 				}
 
 				lastRfp = rfp;
@@ -300,6 +300,7 @@ public class MyDedup {
 				break;
 			}
 		}
+		
 		// size = file size here
 		// DEBUG
 		for (int i : offsets) {
