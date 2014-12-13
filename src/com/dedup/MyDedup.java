@@ -137,7 +137,13 @@ public class MyDedup {
 			IStorage storage = StorageFactory.getStorage(request.storage);
 
 			// open or create index
-			Index index = MyDedup.indexExists() ? MyDedup.open() : new Index();
+			Index index;
+			if (MyDedup.indexExists()) {
+				index = MyDedup.open();
+
+			} else {
+				index = new Index();
+			}
 
 			switch (request.action) {
 			case DELETE:
@@ -176,17 +182,17 @@ public class MyDedup {
 
 		int b;
 		ArrayList<Integer> offsets = new ArrayList<Integer>();
-		ArrayList<String> chunkList = new ArrayList<String>();
+		ArrayList<String> chunks = new ArrayList<String>();
 		offsets.add(0);
 		int size = 0;
 		int lastRfp = 0;
 		int offset = 0;
 		boolean chunkFound = false;
-		//int currentChunkSize = 0;
+		// int currentChunkSize = 0;
 
-		//ArrayList<Byte> byteStore = new ArrayList<Byte>();
+		// ArrayList<Byte> byteStore = new ArrayList<Byte>();
 		ByteBuffer byteStore = ByteBuffer.allocate(request.x);
-		
+
 		// @see tut9_assg3-rfp.pdf p.31
 		// Rabin Fingerprint here
 		while (true) {
@@ -197,7 +203,7 @@ public class MyDedup {
 				byteStore.put((byte) data);
 				offset++;
 				size++;
-			} else {//if EOF
+			} else {
 				offsets.add(offset);
 				chunkFound = true;
 			}
@@ -221,7 +227,8 @@ public class MyDedup {
 						rfp = rfp % request.q;
 					} else if (size >= request.m + 1) {
 						int lastByte = byteStore.get(0);
-						int mod = (int) modExpOpt(request.d, request.m - 1, request.q);
+						int mod = (int) modExpOpt(request.d, request.m - 1,
+								request.q);
 						int q = request.q;
 						int d = (request.d % request.q);
 						int psMinus1 = (lastRfp % request.q);
@@ -231,7 +238,8 @@ public class MyDedup {
 
 						int tempPart1 = ((d_mMinus1 % q) * (ts % q)) % q;
 						int tempPart2 = ((psMinus1 % q) - tempPart1) % q;
-						rfp = ((((d % q) * (tempPart2)) % q) + (tsPlusM % q)) % q;
+						rfp = ((((d % q) * (tempPart2)) % q) + (tsPlusM % q))
+								% q;
 						// rfp = ((((request.d % request.q) * ((lastRfp %
 						// request.q) - (((mod % request.q) * (lastByte %
 						// request.q)) % request.q) % request.q)) % request.q) +
@@ -249,63 +257,57 @@ public class MyDedup {
 					// "\tsize:" + size + "\tlastRfp:" + lastRfp);
 				}
 
-				if (rfp == request.v) {//if this is the interested value
+				if (rfp == request.v) {
 					offsets.add(offset);
-					chunkFound = true;//we found the chunk
+					chunkFound = true;
 				}
 
 				lastRfp = rfp;
 
-			} 
-			
-			if(chunkFound){//if chunk is found
-				
-				//sub array according to the size
-				System.out.println("chunk size: " + size);
+			}
+
+			if (chunkFound) {
+
 				byte[] chunk = Arrays.copyOfRange(byteStore.array(), 0, size);
-				
-				//do the message digest
 				MessageDigest md = MessageDigest.getInstance("SHA-1");
+				System.out.println("chunk size: " + size);
 				md.update(chunk, 0, size);
+
 				byte[] checksumInByte = md.digest();
 				String checksum = new BigInteger(1, checksumInByte)
 						.toString(16);
 
-				//get the indexed chunk from the index
-				Chunk indexedChunk = index.chunks.get(checksum);
-				
-				if (indexedChunk == null) {//if the chunk is not in index
+				Chunk ch = index.chunks.get(checksum);
+				if (ch == null) {
+					// the chunk is new! amazaing!!!
 					System.out.println(checksum + " is new, upload it!");
-					Chunk newChunk =  new Chunk(chunk);
-					index.chunks.put(checksum, newChunk);
-					storage.put(checksum, newChunk);
+					ch = new Chunk(request.storage, 1);
+					storage.put(checksum, new Chunk(chunk));
+				} else {
+					ch.increment();
 				}
-				else{//if the chunk is indexed
-					indexedChunk.increment();//increase the ref count
-				}
-
-				//add the checksum to the list
-				chunkList.add(checksum);
 				
-				//clear the byteStore
+				index.chunks.put(checksum, ch);
+				chunks.add(checksum);
+
 				byteStore.clear();
-				//reset the size counter
 				size = 0;
-				//reset the found boolean
 				chunkFound = false;
 			}
 
-			if (b == -1) {//exist the while loop when done the reading
+			if (b == -1) {
 				break;
 			}
 		}
-		
 		// size = file size here
 		// DEBUG
 		for (int i : offsets) {
 			System.out.println(i);
 		}
 		in.close();
+		// insert file record
+
+		index.files.put(request.pathName, chunks);
 	}
 
 	public static void downloadAction(RequestParameters request,
@@ -318,11 +320,16 @@ public class MyDedup {
 		FileOutputStream output = new FileOutputStream(new File(
 				request.pathName));
 
+		System.out.println("Downloading " + request.pathName);
 		// SHA-1 String , Chunk pair
+		int i = 0;
 		for (Entry<String, Chunk> pair : index.getChunks(request.pathName)) {
 			IStorage storage = StorageFactory.getStorage(pair.getValue().type);
 			Chunk chunkData = storage.get(pair.getKey());
 			output.write(chunkData.data);
+			i++;
+			System.out.println("[Chunk " + i + "] " + pair.getKey() + " ("
+					+ chunkData.data.length + " bytes)");
 		}
 		output.close();
 	}

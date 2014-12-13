@@ -21,7 +21,6 @@ public class Chunk implements Serializable{
 		this.data = data;
 		this.refCount = 1;
 	}
-
 	public Chunk(StorageType type, int c) {
 		this.type = type;
 		this.refCount = c;
