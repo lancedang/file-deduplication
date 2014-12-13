@@ -284,6 +284,7 @@ public class MyDedup {
 				} else {
 					ch.increment();
 				}
+				
 				index.chunks.put(checksum, ch);
 				chunks.add(checksum);
 
