@@ -176,6 +176,7 @@ public class MyDedup {
 
 		int b;
 		ArrayList<Integer> offsets = new ArrayList<Integer>();
+		ArrayList<String> chunkList = new ArrayList<String>();
 		offsets.add(0);
 		int size = 0;
 		int lastRfp = 0;
@@ -257,29 +258,45 @@ public class MyDedup {
 
 			} 
 			
-			if(chunkFound){
-
-				byte[] chunk = Arrays.copyOfRange(byteStore.array(), 0, size);
-				MessageDigest md = MessageDigest.getInstance("SHA-1");
+			if(chunkFound){//if chunk is found
+				
+				//sub array according to the size
 				System.out.println("chunk size: " + size);
+				byte[] chunk = Arrays.copyOfRange(byteStore.array(), 0, size);
+				
+				//do the message digest
+				MessageDigest md = MessageDigest.getInstance("SHA-1");
 				md.update(chunk, 0, size);
-
 				byte[] checksumInByte = md.digest();
 				String checksum = new BigInteger(1, checksumInByte)
 						.toString(16);
 
-				// the chunk is new! amazaing!!!
-				if (index.chunks.get(checksum) == null) {
+				//get the indexed chunk from the index
+				Chunk indexedChunk = index.chunks.get(checksum);
+				
+				if (indexedChunk == null) {//if the chunk is not in index
 					System.out.println(checksum + " is new, upload it!");
-					storage.put(checksum, new Chunk(chunk));
+					Chunk newChunk =  new Chunk(chunk);
+					index.chunks.put(checksum, newChunk);
+					storage.put(checksum, newChunk);
+				}
+				else{//if the chunk is indexed
+					//add ref count to the chunk
+					indexedChunk.refCount++;
 				}
 
+				//add the checksum to the list
+				chunkList.add(checksum);
+				
+				//clear the byteStore
 				byteStore.clear();
+				//reset the size counter
 				size = 0;
+				//reset the found boolean
 				chunkFound = false;
 			}
 
-			if (b == -1) {
+			if (b == -1) {//exist the while loop when done the reading
 				break;
 			}
 		}
