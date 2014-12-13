@@ -179,16 +179,24 @@ public class MyDedup {
 
 		BufferedInputStream in = new BufferedInputStream(new FileInputStream(request.pathName));
 		int b;
+		
+		//offests for debug
 		ArrayList<Integer> offsets = new ArrayList<Integer>();
-		ArrayList<String> chunks = new ArrayList<String>();
 		offsets.add(0);
+		
+		//chunks list for the file
+		ArrayList<String> chunks = new ArrayList<String>();
+		
 		int size = 0;
 		int lastRfp = 0;
 		int offset = 0;
 		boolean chunkFound = false;
-		// int currentChunkSize = 0;
-
-		// ArrayList<Byte> byteStore = new ArrayList<Byte>();
+		
+		//stats stuffs
+		int chunksUploaded = 0;
+		int bytesUploaded = 0;
+		
+		//used to store bytes
 		ByteBuffer byteStore = ByteBuffer.allocate(request.x);
 
 		// @see tut9_assg3-rfp.pdf p.31
@@ -265,27 +273,39 @@ public class MyDedup {
 			}
 
 			if (chunkFound) {
-
+				//debug use
+				//System.out.println("chunk size: " + size);
+				
+				//do the sha-1 magic
 				byte[] chunk = Arrays.copyOfRange(byteStore.array(), 0, size);
 				MessageDigest md = MessageDigest.getInstance("SHA-1");
-				System.out.println("chunk size: " + size);
 				md.update(chunk, 0, size);
-
 				byte[] checksumInByte = md.digest();
-				String checksum = new BigInteger(1, checksumInByte)
-						.toString(16);
+				
+				//checksum string
+				String checksum = new BigInteger(1, checksumInByte).toString(16);
 
+				//get the chunk from index
 				Chunk ch = index.chunks.get(checksum);
-				if (ch == null) {
-					// the chunk is new! amazaing!!!
-					System.out.println(checksum + " is new, upload it!");
+				
+				if (ch == null) {//if this is new chunk
+					//System.out.println(checksum + " is new, upload it!");
 					ch = new Chunk(request.storage, 1);
 					storage.put(checksum, new Chunk(chunk));
-				} else {
+					
+					//update stats of this job
+					bytesUploaded += size;
+					chunksUploaded++;
+					
+				} else {//if this is existing chink
+					//increase the ref count of chunk object
 					ch.increment();
 				}
 				
+				//update or create chunk into the index
 				index.chunks.put(checksum, ch);
+				
+				//add the checksum the chunks list
 				chunks.add(checksum);
 
 				byteStore.clear();
@@ -302,9 +322,15 @@ public class MyDedup {
 		for (int i : offsets) {
 			System.out.println(i);
 		}
+		
+		//print stats stuff
+		System.out.println("Chunks uploaded: " + chunksUploaded);
+		System.out.println("Bytes uploaded: " + bytesUploaded);
+		
+		//clean up
 		in.close();
+		
 		// insert file record
-
 		index.files.put(request.pathName, chunks);
 	}
 

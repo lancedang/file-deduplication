@@ -3,16 +3,11 @@
  */
 package com.dedup.storage;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-
 import com.dedup.Chunk;
 import com.dedup.storage.StorageFactory.StorageType;
 
@@ -21,13 +16,18 @@ import com.dedup.storage.StorageFactory.StorageType;
  *
  */
 public class LocalStorage implements IStorage {
-	private static final String folder = "data/";
+	private String folder;
 
 	/**
 	 * 
 	 */
 	public LocalStorage(String directory) {
+		this.folder = directory;
 		// TODO Auto-generated constructor stub
+		if (!this.exists(folder)){
+			File newFolder = new File(this.folder);
+			newFolder.mkdir();
+		}
 	}
 
 	/*
