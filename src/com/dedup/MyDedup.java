@@ -26,6 +26,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 
 /**
@@ -190,6 +191,7 @@ public class MyDedup {
 		int size = 0;
 		int lastRfp = 0;
 		int offset = 0;
+		int totalSize = 0;
 		boolean chunkFound = false;
 		
 		//stats stuffs
@@ -205,10 +207,12 @@ public class MyDedup {
 			b = in.read();
 			int rfp = 0;
 			int data = (int) (b & 0xFF);
+			
 			if (b != -1) {
 				byteStore.put((byte) data);
 				offset++;
 				size++;
+				totalSize++;
 			} else {
 				offsets.add(offset);
 				chunkFound = true;
@@ -302,12 +306,14 @@ public class MyDedup {
 					ch.increment();
 				}
 				
+				
 				//update or create chunk into the index
 				index.chunks.put(checksum, ch);
 				
 				//add the checksum the chunks list
 				chunks.add(checksum);
 
+				
 				byteStore.clear();
 				size = 0;
 				chunkFound = false;
@@ -323,9 +329,13 @@ public class MyDedup {
 			System.out.println(i);
 		}
 		
-		//print stats stuff
-		System.out.println("Chunks uploaded: " + chunksUploaded);
-		System.out.println("Bytes uploaded: " + bytesUploaded);
+		//print report
+		System.out.println("Report Output:");
+		System.out.println("Total number of chunks: " + chunks.size());
+		System.out.println("Number of unique chunks: " + chunksUploaded);
+		System.out.println("Number of bytes with deduplication: " + (totalSize - bytesUploaded));
+		System.out.println("Number of bytes without deduplication: " + bytesUploaded);
+		System.out.println("Deduplication ratio: " + (bytesUploaded == 0 ? "Inf" : (totalSize - bytesUploaded) / bytesUploaded));
 		
 		//clean up
 		in.close();
