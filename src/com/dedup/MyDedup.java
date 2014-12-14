@@ -160,7 +160,7 @@ public class MyDedup {
 			// save index
 			MyDedup.save(index);
 
-			System.out.println("[DEBUG] =========end=========");
+			//System.out.println("[DEBUG] =========end=========");
 
 		} catch (InvalidKeyException | URISyntaxException | StorageException
 				| IOException | ClassNotFoundException e) {
@@ -325,9 +325,9 @@ public class MyDedup {
 		}
 		// size = file size here
 		// DEBUG
-		for (int i : offsets) {
-			System.out.println(i);
-		}
+		//for (int i : offsets) {
+		//	System.out.println(i);
+		//}
 		
 		//print report
 		System.out.println("Report Output:");
@@ -335,7 +335,7 @@ public class MyDedup {
 		System.out.println("Number of unique chunks: " + chunksUploaded);
 		System.out.println("Number of bytes with deduplication: " + (totalSize - bytesUploaded));
 		System.out.println("Number of bytes without deduplication: " + bytesUploaded);
-		System.out.println("Deduplication ratio: " + (bytesUploaded == 0 ? "Inf" : (totalSize - bytesUploaded) / bytesUploaded));
+		System.out.println("Deduplication ratio: " + (bytesUploaded == 0 ? "Inf" : (float)(totalSize - bytesUploaded) / bytesUploaded));
 		
 		//clean up
 		in.close();
