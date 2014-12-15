@@ -194,13 +194,13 @@ public class MyDedup {
 		int size = 0;
 		int lastRfp = 0;
 		int offset = 0;
-		int totalSize = 0;
 		boolean chunkFound = false;
 
 		// stats stuffs
-		int chunksUploaded = 0;
 		int bytesUploaded = 0;
 
+		HashMap<String, Integer> uniqueChunk = new HashMap<String, Integer>();
+		
 		// used to store bytes
 		ByteBuffer byteStore = ByteBuffer.allocate(request.x);
 
@@ -215,7 +215,6 @@ public class MyDedup {
 				byteStore.put((byte) data);
 				offset++;
 				size++;
-				totalSize++;
 			} else {
 				offsets.add(offset);
 				chunkFound = true;
@@ -301,9 +300,6 @@ public class MyDedup {
 					ch = new Chunk(request.storage, 1);
 					storage.put(checksum, new Chunk(chunk));
 
-					// update stats of this job
-					bytesUploaded += size;
-					chunksUploaded++;
 
 				} else {// if this is existing chink
 					// increase the ref count of chunk object
@@ -315,6 +311,7 @@ public class MyDedup {
 
 				// add the checksum the chunks list
 				chunks.add(checksum);
+				uniqueChunk.put(checksum,size);
 
 				byteStore.clear();
 				size = 0;
@@ -332,17 +329,23 @@ public class MyDedup {
 		// }
 
 		// print report
+		
+		for (Integer currSize : uniqueChunk.values()) {
+			bytesUploaded += currSize;
+		}
+		
 		System.out.println("Report Output:");
 		System.out.println("Total number of chunks: " + chunks.size());
-		System.out.println("Number of unique chunks: " + chunksUploaded);
-		System.out.println("Number of bytes with deduplication: "
-				+ (totalSize - bytesUploaded));
-		System.out.println("Number of bytes without deduplication: "
-				+ bytesUploaded);
-		System.out.println("Deduplication ratio: "
-				+ (bytesUploaded == 0 ? "Inf"
-						: (float) (totalSize - bytesUploaded) / bytesUploaded));
-
+		System.out.println("Number of unique chunks: " + uniqueChunk.size());
+		System.out.println("Number of bytes with deduplication: " +  bytesUploaded);
+		System.out.println("Number of bytes without deduplication: " + file.length());
+		
+		if(bytesUploaded == 0){
+			System.out.println("Deduplication ratio: Inf");
+		}
+		else{
+			System.out.printf("Deduplication ratio: %.2f%%\n",((float)(bytesUploaded / file.length()) * 100));
+		}
 		// clean up
 		in.close();
 
