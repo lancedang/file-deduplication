@@ -33,7 +33,7 @@ public class AzureStorage implements IStorage {
 	 */
 	public AzureStorage(String connectionString) throws InvalidKeyException,
 			URISyntaxException, StorageException {
-	//	System.out.println(connectionString);
+		// System.out.println(connectionString);
 		storageAccount = CloudStorageAccount.parse(connectionString);
 		client = this.storageAccount.createCloudBlobClient();
 		container = this.client.getContainerReference("csci4180deduplication");
@@ -104,11 +104,14 @@ public class AzureStorage implements IStorage {
 	}
 
 	@Override
-	public long length(String fingerprint) throws URISyntaxException, StorageException {
+	public long length(String fingerprint) throws URISyntaxException,
+			StorageException {
 		CloudBlockBlob blob = container.getBlockBlobReference("blocks/"
 				+ fingerprint);
-		
-		return blob.getProperties().getLength();
+		blob.downloadAttributes();
+		BlobProperties x = blob.getProperties();
+
+		return x.getLength();
 	}
 
 }
