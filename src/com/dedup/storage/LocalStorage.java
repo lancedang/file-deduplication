@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+
 import com.dedup.Chunk;
 import com.dedup.storage.StorageFactory.StorageType;
 
@@ -125,6 +126,11 @@ public class LocalStorage implements IStorage {
 	@Override
 	public StorageType getType() {
 		return StorageFactory.StorageType.LOCAL;
+	}
+
+	@Override
+	public long length(String fingerprint) {
+		return new File(folder + fingerprint).length();
 	}
 
 }

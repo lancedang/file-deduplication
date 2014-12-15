@@ -25,6 +25,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
@@ -161,7 +162,7 @@ public class MyDedup {
 			// save index
 			MyDedup.save(index);
 
-			//System.out.println("[DEBUG] =========end=========");
+			// System.out.println("[DEBUG] =========end=========");
 
 		} catch (InvalidKeyException | URISyntaxException | StorageException
 				| IOException | ClassNotFoundException e) {
@@ -362,14 +363,29 @@ public class MyDedup {
 		System.out.println("Downloading " + request.pathName);
 		// SHA-1 String , Chunk pair
 		int i = 0;
+
+		HashMap<String, Integer> downloadedChunkSizes = new HashMap<String, Integer>();
+		long downloadedSize = 0;
+		long reconstructedSize = 0;
 		for (Entry<String, Chunk> pair : index.getChunks(request.pathName)) {
 			IStorage storage = StorageFactory.getStorage(pair.getValue().type);
 			Chunk chunkData = storage.get(pair.getKey());
+			downloadedChunkSizes.put(pair.getKey(), chunkData.data.length);
+			reconstructedSize += chunkData.data.length;
+
 			output.write(chunkData.data);
 			i++;
 			System.out.println("[Chunk " + i + "] " + pair.getKey() + " ("
 					+ chunkData.data.length + " bytes)");
 		}
+
+		for (Integer size : downloadedChunkSizes.values()) {
+			downloadedSize += size;
+		}
+		out.println("Report Output:");
+		out.println("Number of chunks downloaded: " + downloadedSize);
+		out.println("Number of chunks reconstructed: " + reconstructedSize);
+
 		output.close();
 	}
 
@@ -391,16 +407,22 @@ public class MyDedup {
 			}
 		}
 
+		long bytesDeleted = 0;
 		for (Entry<String, Chunk> pair : deleteList) {
-			out.println("[DEBUG] " + pair.getKey() + " removed from "
-					+ pair.getValue().type.toString());
+			/*
+			 * out.println("[DEBUG] " + pair.getKey() + " removed from " +
+			 * pair.getValue().type.toString());
+			 */
 			IStorage storage = StorageFactory.getStorage(pair.getValue().type);
+			bytesDeleted += storage.length(pair.getKey());
 			storage.remove(pair.getKey());
 			index.chunks.remove(pair.getKey());
 		}
 		index.files.remove(request.pathName);
-		out.println("Delete done and " + deleteList.size()
-				+ " chucks are removed");
+
+		out.println("Report Output:");
+		out.println("Number of chunks deleted: " + deleteList.size());
+		out.println("Number of bytes deleted: " + bytesDeleted);
 	}
 
 	public static String calculateFingerprint(byte[] data) {
