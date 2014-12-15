@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang3.ArrayUtils;
 /**
  * @author NTF
  *
@@ -178,27 +179,28 @@ public class MyDedup {
 		}
 		// FileInputStream in = new FileInputStream(request.pathName);
 
-		BufferedInputStream in = new BufferedInputStream(new FileInputStream(request.pathName));
+		BufferedInputStream in = new BufferedInputStream(new FileInputStream(
+				request.pathName));
 		int b;
-		
-		//offests for debug
+
+		// offests for debug
 		ArrayList<Integer> offsets = new ArrayList<Integer>();
 		offsets.add(0);
-		
-		//chunks list for the file
+
+		// chunks list for the file
 		ArrayList<String> chunks = new ArrayList<String>();
-		
+
 		int size = 0;
 		int lastRfp = 0;
 		int offset = 0;
 		int totalSize = 0;
 		boolean chunkFound = false;
-		
-		//stats stuffs
+
+		// stats stuffs
 		int chunksUploaded = 0;
 		int bytesUploaded = 0;
-		
-		//used to store bytes
+
+		// used to store bytes
 		ByteBuffer byteStore = ByteBuffer.allocate(request.x);
 
 		// @see tut9_assg3-rfp.pdf p.31
@@ -207,7 +209,7 @@ public class MyDedup {
 			b = in.read();
 			int rfp = 0;
 			int data = (int) (b & 0xFF);
-			
+
 			if (b != -1) {
 				byteStore.put((byte) data);
 				offset++;
@@ -265,55 +267,54 @@ public class MyDedup {
 					// DEBUG
 					// System.out.println("ps:" + rfp + "\toffset:" + offset +
 					// "\tsize:" + size + "\tlastRfp:" + lastRfp);
+					if (rfp == request.v) {
+						offsets.add(offset);
+						chunkFound = true;
+					}
 				}
 
-				if (rfp == request.v) {
-					offsets.add(offset);
-					chunkFound = true;
-				}
 
 				lastRfp = rfp;
 
 			}
 
 			if (chunkFound) {
-				//debug use
-				//System.out.println("chunk size: " + size);
-				
-				//do the sha-1 magic
+				// debug use
+				// System.out.println("chunk size: " + size);
+
+				// do the sha-1 magic
 				byte[] chunk = Arrays.copyOfRange(byteStore.array(), 0, size);
 				MessageDigest md = MessageDigest.getInstance("SHA-1");
 				md.update(chunk, 0, size);
 				byte[] checksumInByte = md.digest();
-				
-				//checksum string
-				String checksum = new BigInteger(1, checksumInByte).toString(16);
 
-				//get the chunk from index
+				// checksum string
+				String checksum = new BigInteger(1, checksumInByte)
+						.toString(16);
+
+				// get the chunk from index
 				Chunk ch = index.chunks.get(checksum);
-				
-				if (ch == null) {//if this is new chunk
-					//System.out.println(checksum + " is new, upload it!");
+
+				if (ch == null) {// if this is new chunk
+					// System.out.println(checksum + " is new, upload it!");
 					ch = new Chunk(request.storage, 1);
 					storage.put(checksum, new Chunk(chunk));
-					
-					//update stats of this job
+
+					// update stats of this job
 					bytesUploaded += size;
 					chunksUploaded++;
-					
-				} else {//if this is existing chink
-					//increase the ref count of chunk object
+
+				} else {// if this is existing chink
+					// increase the ref count of chunk object
 					ch.increment();
 				}
-				
-				
-				//update or create chunk into the index
+
+				// update or create chunk into the index
 				index.chunks.put(checksum, ch);
-				
-				//add the checksum the chunks list
+
+				// add the checksum the chunks list
 				chunks.add(checksum);
 
-				
 				byteStore.clear();
 				size = 0;
 				chunkFound = false;
@@ -325,21 +326,25 @@ public class MyDedup {
 		}
 		// size = file size here
 		// DEBUG
-		//for (int i : offsets) {
-		//	System.out.println(i);
-		//}
-		
-		//print report
+		// for (int i : offsets) {
+		// System.out.println(i);
+		// }
+
+		// print report
 		System.out.println("Report Output:");
 		System.out.println("Total number of chunks: " + chunks.size());
 		System.out.println("Number of unique chunks: " + chunksUploaded);
-		System.out.println("Number of bytes with deduplication: " + (totalSize - bytesUploaded));
-		System.out.println("Number of bytes without deduplication: " + bytesUploaded);
-		System.out.println("Deduplication ratio: " + (bytesUploaded == 0 ? "Inf" : (float)(totalSize - bytesUploaded) / bytesUploaded));
-		
-		//clean up
+		System.out.println("Number of bytes with deduplication: "
+				+ (totalSize - bytesUploaded));
+		System.out.println("Number of bytes without deduplication: "
+				+ bytesUploaded);
+		System.out.println("Deduplication ratio: "
+				+ (bytesUploaded == 0 ? "Inf"
+						: (float) (totalSize - bytesUploaded) / bytesUploaded));
+
+		// clean up
 		in.close();
-		
+
 		// insert file record
 		index.files.put(request.pathName, chunks);
 	}
