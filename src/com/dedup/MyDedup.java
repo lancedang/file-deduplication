@@ -177,6 +177,9 @@ public class MyDedup {
 		if (!file.exists()) {
 			throw new FileNotFoundException("input file not found.");
 		}
+		if (index.hasFile(request.pathName)) {
+			throw new FileNotFoundException("file exists in the index");
+		}
 		// FileInputStream in = new FileInputStream(request.pathName);
 
 		BufferedInputStream in = new BufferedInputStream(new FileInputStream(
