@@ -27,10 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
+
 import java.util.Map.Entry;
 
-import org.apache.commons.lang3.ArrayUtils;
 /**
  * @author NTF
  *
@@ -194,15 +193,22 @@ public class MyDedup {
 		int size = 0;
 		int lastRfp = 0;
 		int offset = 0;
+
+		int hit1 = 0;
+		int hit2 = 0;
+		
 		boolean chunkFound = false;
 
 		// stats stuffs
+		int chunksUploaded = 0;
 		int bytesUploaded = 0;
-
-		HashMap<String, Integer> uniqueChunk = new HashMap<String, Integer>();
 		
 		// used to store bytes
 		ByteBuffer byteStore = ByteBuffer.allocate(request.x);
+		
+		//pre-compute
+		int preMod = (int) modExpOpt(request.d, request.m - 1,
+				request.q);		
 
 		// @see tut9_assg3-rfp.pdf p.31
 		// Rabin Fingerprint here
@@ -215,7 +221,7 @@ public class MyDedup {
 				byteStore.put((byte) data);
 				offset++;
 				size++;
-			} else {
+			} else { //if eof
 				offsets.add(offset);
 				chunkFound = true;
 			}
@@ -230,6 +236,8 @@ public class MyDedup {
 				// calculate RFP
 				if (size >= request.m) {
 					if (size == request.m) {
+						//System.out.println("start over offset -> " + offset);
+						hit1++;
 						for (int i = 1; i <= request.m; i++) {
 							int t = byteStore.get(i - 1);
 							int e = request.m - i;
@@ -237,14 +245,14 @@ public class MyDedup {
 							rfp += (t * mod) % request.q;
 						}
 						rfp = rfp % request.q;
-					} else if (size >= request.m + 1) {
-						int lastByte = byteStore.get(0);
-						int mod = (int) modExpOpt(request.d, request.m - 1,
-								request.q);
+					} else if (size > request.m) {
+						hit2++;
+						//System.out.println("offset -> " + offset + " pos -> " + (size - request.m));
+						int lastByte = byteStore.get(size - request.m);
 						int q = request.q;
 						int d = (request.d % request.q);
 						int psMinus1 = (lastRfp % request.q);
-						int d_mMinus1 = (mod % request.q);
+						int d_mMinus1 = (preMod % request.q);
 						int ts = (lastByte % request.q);
 						int tsPlusM = (data % request.q);
 
@@ -260,7 +268,6 @@ public class MyDedup {
 						// modExpOpt(request.d, request.m - 1, request.q) *
 						// (lastByte % request.q));
 						if (rfp < 0) {
-
 							rfp += request.q;
 						}
 					}
@@ -300,6 +307,9 @@ public class MyDedup {
 					ch = new Chunk(request.storage, 1);
 					storage.put(checksum, new Chunk(chunk));
 
+					// update stats of this job
+					bytesUploaded += size;
+					chunksUploaded++;
 
 				} else {// if this is existing chink
 					// increase the ref count of chunk object
@@ -311,7 +321,6 @@ public class MyDedup {
 
 				// add the checksum the chunks list
 				chunks.add(checksum);
-				uniqueChunk.put(checksum,size);
 
 				byteStore.clear();
 				size = 0;
@@ -323,28 +332,24 @@ public class MyDedup {
 			}
 		}
 		// size = file size here
-		// DEBUG
-		// for (int i : offsets) {
-		// System.out.println(i);
-		// }
+		/* DEBUG
+		 for (int i : offsets) {
+		 System.out.println(i);
+		 }*/
 
 		// print report
-		
-		for (Integer currSize : uniqueChunk.values()) {
-			bytesUploaded += currSize;
-		}
-		
+		//System.out.println("Hit1 " + hit1);
+		//System.out.println("Hit2 " + hit2);
 		System.out.println("Report Output:");
 		System.out.println("Total number of chunks: " + chunks.size());
-		System.out.println("Number of unique chunks: " + uniqueChunk.size());
+		System.out.println("Number of unique chunks: " + chunksUploaded);
 		System.out.println("Number of bytes with deduplication: " +  bytesUploaded);
 		System.out.println("Number of bytes without deduplication: " + file.length());
-		
-		if(bytesUploaded == 0){
+		if(file.length() == 0){
 			System.out.println("Deduplication ratio: Inf");
 		}
 		else{
-			System.out.printf("Deduplication ratio: %.2f%%\n",((float)(bytesUploaded / file.length()) * 100));
+			System.out.printf("Deduplication ratio: %.2f%%\n",(((float)bytesUploaded / (float)file.length()) * 100.0));
 		}
 		// clean up
 		in.close();
@@ -363,9 +368,9 @@ public class MyDedup {
 		FileOutputStream output = new FileOutputStream(new File(
 				request.pathName));
 
-		System.out.println("Downloading " + request.pathName);
+		//System.out.println("Downloading " + request.pathName);
 		// SHA-1 String , Chunk pair
-		int i = 0;
+		//int i = 0;
 
 		HashMap<String, Integer> downloadedChunkSizes = new HashMap<String, Integer>();
 		long downloadedSize = 0;
@@ -377,9 +382,8 @@ public class MyDedup {
 			reconstructedSize += chunkData.data.length;
 
 			output.write(chunkData.data);
-			i++;
-			System.out.println("[Chunk " + i + "] " + pair.getKey() + " ("
-					+ chunkData.data.length + " bytes)");
+			//i++;
+			//System.out.println("[Chunk " + i + "] " + pair.getKey() + " ("+ chunkData.data.length + " bytes)");
 		}
 
 		for (Integer size : downloadedChunkSizes.values()) {
