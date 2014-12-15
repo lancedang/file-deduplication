@@ -1,0 +1,7 @@
+./src/com/dedup/Chunk.java
+./src/com/dedup/MyDedup.java
+./src/com/dedup/storage/StorageFactory.java
+./src/com/dedup/storage/AzureStorage.java
+./src/com/dedup/storage/LocalStorage.java
+./src/com/dedup/storage/IStorage.java
+./src/com/dedup/Index.java
