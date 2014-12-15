@@ -103,4 +103,12 @@ public class AzureStorage implements IStorage {
 		return StorageFactory.StorageType.AZURE;
 	}
 
+	@Override
+	public long length(String fingerprint) throws URISyntaxException, StorageException {
+		CloudBlockBlob blob = container.getBlockBlobReference("blocks/"
+				+ fingerprint);
+		
+		return blob.getProperties().getLength();
+	}
+
 }
