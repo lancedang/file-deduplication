@@ -27,8 +27,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 /**
  * @author NTF
@@ -192,13 +192,13 @@ public class MyDedup {
 
 		// chunks list for the file
 		ArrayList<String> chunks = new ArrayList<String>();
+		
+		//local unique chunk
+		TreeMap<String,Integer> localChunks = new TreeMap<String,Integer>();
 
 		int size = 0;
 		int lastRfp = 0;
 		int offset = 0;
-
-		int hit1 = 0;
-		int hit2 = 0;
 		
 		boolean chunkFound = false;
 
@@ -240,7 +240,7 @@ public class MyDedup {
 				if (size >= request.m) {
 					if (size == request.m) {
 						//System.out.println("start over offset -> " + offset);
-						hit1++;
+
 						for (int i = 1; i <= request.m; i++) {
 							int t = byteStore.get(i - 1);
 							int e = request.m - i;
@@ -249,7 +249,7 @@ public class MyDedup {
 						}
 						rfp = rfp % request.q;
 					} else if (size > request.m) {
-						hit2++;
+
 						//System.out.println("offset -> " + offset + " pos -> " + (size - request.m));
 						int lastByte = byteStore.get(size - request.m);
 						int q = request.q;
@@ -314,10 +314,16 @@ public class MyDedup {
 					// update stats of this job
 					bytesUploaded += size;
 					chunksUploaded++;
+					
+					//put it into localChunks map
+					localChunks.put(checksum, 0);
 
 				} else {// if this is existing chink
-					// increase the ref count of chunk object
-					ch.increment();
+					// increase the ref count of chunk object if it first appear in this file
+					if(localChunks.get(checksum) == null){
+						localChunks.put(checksum, 0);
+						ch.increment();
+					}
 				}
 
 				// update or create chunk into the index
@@ -335,11 +341,12 @@ public class MyDedup {
 				break;
 			}
 		}
+		
 		// size = file size here
-		 /*DEBUG
+		 //DEBUG
 		 for (int i : offsets) {
 			 System.out.println(i);
-		 }*/
+		 }
 
 		// print report
 		//System.out.println("Hit1 " + hit1);
