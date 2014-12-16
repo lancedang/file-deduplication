@@ -336,10 +336,10 @@ public class MyDedup {
 			}
 		}
 		// size = file size here
-		 //DEBUG
+		 /*DEBUG
 		 for (int i : offsets) {
 			 System.out.println(i);
-		 }
+		 }*/
 
 		// print report
 		//System.out.println("Hit1 " + hit1);
