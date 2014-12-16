@@ -396,7 +396,7 @@ public class MyDedup {
 		out.println("Report Output:");
 		out.println("Number of chunks downloaded: " + index.getUniqueChunks(request.pathName).size());
 		out.println("Number of bytes downloaded: " + downloadedSize);
-		out.println("Number of chunks reconstructed: " + reconstructedSize);
+		out.println("Number of bytes reconstructed: " + reconstructedSize);
 
 		output.close();
 	}
