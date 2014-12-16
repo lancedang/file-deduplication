@@ -224,13 +224,13 @@ public class MyDedup {
 				byteStore.put((byte) data);
 				offset++;
 				size++;
-			} else { //if eof
+			} else if(offsets.get(offsets.size() - 1) != offset){ //if eof and anchor point is not placed for last byte
 				offsets.add(offset);
 				chunkFound = true;
 			}
-
+			
 			// if the size reach max chunk size
-			if (size == request.x) {
+			if (size == request.x && !chunkFound) {
 				offsets.add(offset);
 				chunkFound = true;
 			}
@@ -287,6 +287,7 @@ public class MyDedup {
 				lastRfp = rfp;
 
 			}
+			
 
 			if (chunkFound) {
 				// debug use
@@ -335,9 +336,9 @@ public class MyDedup {
 			}
 		}
 		// size = file size here
-		/* DEBUG
+		 /*DEBUG
 		 for (int i : offsets) {
-		 System.out.println(i);
+			 System.out.println(i);
 		 }*/
 
 		// print report
