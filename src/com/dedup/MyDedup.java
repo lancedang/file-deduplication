@@ -336,10 +336,10 @@ public class MyDedup {
 			}
 		}
 		// size = file size here
-		 /*DEBUG
+		 //DEBUG
 		 for (int i : offsets) {
 			 System.out.println(i);
-		 }*/
+		 }
 
 		// print report
 		//System.out.println("Hit1 " + hit1);
@@ -394,7 +394,8 @@ public class MyDedup {
 			downloadedSize += size;
 		}
 		out.println("Report Output:");
-		out.println("Number of chunks downloaded: " + downloadedSize);
+		out.println("Number of chunks downloaded: " + index.getUniqueChunks(request.pathName).size());
+		out.println("Number of bytes downloaded: " + downloadedSize);
 		out.println("Number of chunks reconstructed: " + reconstructedSize);
 
 		output.close();
