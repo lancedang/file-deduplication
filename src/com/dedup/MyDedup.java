@@ -344,9 +344,9 @@ public class MyDedup {
 		
 		// size = file size here
 		 //DEBUG
-		 //for (int i : offsets) {
+		//for (int i : offsets) {
 		//	 System.out.println(i);
-		// }
+		//}
 
 		// print report
 		//System.out.println("Hit1 " + hit1);
