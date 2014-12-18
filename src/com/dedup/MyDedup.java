@@ -104,6 +104,10 @@ public class MyDedup {
 	 */
 	public static void main(String[] args) throws NoSuchAlgorithmException {
 
+		//set proxy
+		System.setProperty("http.proxyHost", "proxy.cse.cuhk.edu.hk");
+		System.setProperty("http.proxyPort", "8000");
+		
 		RequestParameters request = MyDedup.handleArgs(args);
 
 		if (request == null) {
