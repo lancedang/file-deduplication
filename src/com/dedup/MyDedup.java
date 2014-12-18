@@ -106,7 +106,9 @@ public class MyDedup {
 
 		//set proxy
 		System.setProperty("http.proxyHost", "proxy.cse.cuhk.edu.hk");
-		System.setProperty("http.proxyPort", "8000");
+        System.setProperty("http.proxyPort", "8000");
+        System.setProperty("https.proxyHost", "proxy.cse.cuhk.edu.hk");
+        System.setProperty("https.proxyPort", "8000");
 		
 		RequestParameters request = MyDedup.handleArgs(args);
 
